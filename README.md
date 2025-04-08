@@ -14,4 +14,20 @@ Install the necessary dependencies using pip:
 pip install pygame opencv-python numpy
 
 ```
+### Init Setup
+Init as kiosk mode
+
+```bash
+C:\Users\<Nombre de usuario>\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup
+C:\Users\hp\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup
+```
+
+#### File BAT
+```bash
+@echo off
+cd "C:\Users\hp\Documents\Github\Ventilador"
+python main.py
+pause
+```
+
 ## Visualizer
