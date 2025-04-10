@@ -3,7 +3,7 @@ import cv2
 import os
 import numpy as np
 
-def reproducir_videos_en_carpeta(carpeta, lado_ventana):
+def reproducir_videos_en_carpeta(carpeta, lado_ventana, fps):
     pygame.init()
 
     archivos = [f for f in os.listdir(carpeta) if f.endswith(('.mp4', '.avi', '.mkv'))]
@@ -25,10 +25,10 @@ def reproducir_videos_en_carpeta(carpeta, lado_ventana):
                 continue
 
             # FPS
-            fps = cap.get(cv2.CAP_PROP_FPS)
-            #fps=30
-            if fps == 0:
-                fps = 30 
+            if fps == -1:
+                fps = cap.get(cv2.CAP_PROP_FPS)
+            else:
+                fps = fps
 
             print(f"Reproduciendo {archivo} a {fps:.2f} FPS...")
 
@@ -67,4 +67,5 @@ def reproducir_videos_en_carpeta(carpeta, lado_ventana):
 videos = r"C:\Users\hp\Documents\Github\Ventilador\media"
 # Tamaño de la ventana cuadrada en píxeles
 ventilador = 518
-reproducir_videos_en_carpeta(videos, ventilador)
+fps = -1 # SI FPS es -1 se reproduce a la velocidad del video normal
+reproducir_videos_en_carpeta(videos, ventilador, fps)
