@@ -2,6 +2,7 @@ import pygame
 import cv2
 import os
 import numpy as np
+import control
 
 class VideoPlayer:
     def __init__(self, carpeta, lado_ventana, fps=-1):
@@ -11,7 +12,14 @@ class VideoPlayer:
         self.archivos = [f for f in os.listdir(carpeta) if f.endswith(('.mp4', '.avi', '.mkv'))]
 
         if not self.archivos:
-            raise FileNotFoundError("No se encontraron videos en la carpeta especificada.")
+            raise FileNotFoundError("No hay videos en la carpeta")
+
+        # ===== PARÁMETROS DE CALIBRACIÓN =====
+        self.offset_x = 0      # prueba: -5, +5, etc
+        self.offset_y = 0
+        self.radio_ref = self.lado // 2 - 5  # círculo ligeramente más pequeño
+        self.modo_calibracion = True         # ON para alinear, OFF para uso final
+        # ===================================
 
         pygame.init()
         self.screen = pygame.display.set_mode((self.lado, self.lado), pygame.NOFRAME)
@@ -19,37 +27,46 @@ class VideoPlayer:
 
     def reproducir(self):
         while True:
-            for archivo in self.archivos:
-                ruta_video = os.path.join(self.carpeta, archivo)
-                cap = cv2.VideoCapture(ruta_video)
+            idx = control.video_index % len(self.archivos)
+            ruta_video = os.path.join(self.carpeta, self.archivos[idx])
+            cap = cv2.VideoCapture(ruta_video)
 
-                if not cap.isOpened():
-                    print(f"No se pudo abrir el video {archivo}")
-                    continue
+            fps_actual = self.fps if self.fps != -1 else cap.get(cv2.CAP_PROP_FPS)
 
-                fps_actual = self.fps if self.fps != -1 else cap.get(cv2.CAP_PROP_FPS)
-                print(f"Reproduciendo {archivo} a {fps_actual:.2f} FPS...")
+            while cap.isOpened():
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        cap.release()
+                        pygame.quit()
+                        return
 
-                while True:
-                    for event in pygame.event.get():
-                        if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
-                            cap.release()
-                            pygame.quit()
-                            return
+                if control.cambiar_video:
+                    control.cambiar_video = False
+                    break
 
-                    ret, frame = cap.read()
-                    if not ret:
-                        break
+                ret, frame = cap.read()
+                if not ret:
+                    break
 
-                    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                    frame_resized = cv2.resize(frame_rgb, (self.lado, self.lado))
-                    frame_surface = pygame.surfarray.make_surface(np.transpose(frame_resized, (1, 0, 2)))
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                frame = cv2.resize(frame, (self.lado, self.lado))
+                frame = pygame.surfarray.make_surface(frame.swapaxes(0, 1))
 
-                    self.screen.blit(frame_surface, (0, 0))
-                    pygame.draw.rect(self.screen, (255, 0, 0), (0, 0, self.lado, self.lado), 5)
-                    pygame.display.update()
-                    self.clock.tick(fps_actual)
+                # === BLIT CON DESFASE CONTROLADO ===
+                self.screen.fill((0, 0, 0))
+                self.screen.blit(frame, (self.offset_x, self.offset_y))
 
-                cap.release()
+                # === CÍRCULO ROJO DE REFERENCIA ===
+                if self.modo_calibracion:
+                    pygame.draw.circle(
+                        self.screen,
+                        (255, 0, 0),
+                        (self.lado // 2, self.lado // 2),
+                        self.radio_ref,
+                        2
+                    )
 
-        pygame.quit()
+                pygame.display.update()
+                self.clock.tick(fps_actual)
+
+            cap.release()

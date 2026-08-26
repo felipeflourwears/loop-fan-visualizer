@@ -1,0 +1,15 @@
+# Entorno virtual
+venv/
+__pycache__/
+*.pyc
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Videos (opcional pero recomendado)
+media/*.mp4
+media/*.avi
+media/*.mkv
+mediaold/
+mediosHistoricos/

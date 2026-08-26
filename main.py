@@ -1,11 +1,15 @@
-# main.py
-
+from threading import Thread
+from server import run_server
 from ModelPlayer import VideoPlayer
 
 if __name__ == "__main__":
-    carpeta_videos = r"C:\Users\hp\Documents\Github\Ventilador\media"
-    lado_ventana = 518
-    fps = -1  # -1 para usar el FPS original del video, o un valor específico
+    Thread(target=run_server, daemon=True).start()
 
-    reproductor = VideoPlayer(carpeta=carpeta_videos, lado_ventana=lado_ventana, fps=fps)
-    reproductor.reproducir()
+    player = VideoPlayer(
+        carpeta="media",
+        lado_ventana=648,
+        fps=-1
+    )
+    player.reproducir()
+
+#648
