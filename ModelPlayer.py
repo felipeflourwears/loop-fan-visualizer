@@ -9,16 +9,18 @@ class VideoPlayer:
         self.carpeta = carpeta
         self.lado = lado_ventana
         self.fps = fps
-        self.archivos = [f for f in os.listdir(carpeta) if f.endswith(('.mp4', '.avi', '.mkv'))]
+        
+        # Cargar todos los archivos multimedia de la carpeta
+        self.archivos = sorted([f for f in os.listdir(carpeta) if f.endswith(('.mp4', '.avi', '.mkv'))])
 
         if not self.archivos:
-            raise FileNotFoundError("No hay videos en la carpeta")
+            raise FileNotFoundError(f"No hay videos en la carpeta: {carpeta}")
 
         # ===== PARÁMETROS DE CALIBRACIÓN =====
-        self.offset_x = 0      # prueba: -5, +5, etc
+        self.offset_x = 0      
         self.offset_y = 0
-        self.radio_ref = self.lado // 2 - 5  # círculo ligeramente más pequeño
-        self.modo_calibracion = True         # ON para alinear, OFF para uso final
+        self.radio_ref = self.lado // 2 - 5  
+        self.modo_calibracion = True         
         # ===================================
 
         pygame.init()
@@ -26,12 +28,22 @@ class VideoPlayer:
         self.clock = pygame.time.Clock()
 
     def reproducir(self):
+        # Índice interno para controlar el loop de la lista de archivos
+        indice_actual = 0
+
         while True:
-            idx = control.video_index % len(self.archivos)
+            # Si 'control' fuerza un cambio de índice, lo usamos; si no, usamos el ciclo normal
+            if hasattr(control, 'video_index'):
+                idx = control.video_index % len(self.archivos)
+            else:
+                idx = indice_actual % len(self.archivos)
+
             ruta_video = os.path.join(self.carpeta, self.archivos[idx])
             cap = cv2.VideoCapture(ruta_video)
 
-            fps_actual = self.fps if self.fps != -1 else cap.get(cv2.CAP_PROP_FPS)
+            # Obtener FPS del video original si no se especifica uno fijo
+            fps_video = cap.get(cv2.CAP_PROP_FPS)
+            fps_actual = self.fps if self.fps > 0 else (fps_video if fps_video > 0 else 30)
 
             while cap.isOpened():
                 for event in pygame.event.get():
@@ -40,23 +52,26 @@ class VideoPlayer:
                         pygame.quit()
                         return
 
-                if control.cambiar_video:
+                # Si hay una señal externa para cambiar de video
+                if getattr(control, 'cambiar_video', False):
                     control.cambiar_video = False
                     break
 
                 ret, frame = cap.read()
+                
+                # Al llegar al final del video actual, salimos para pasar al siguiente
                 if not ret:
                     break
 
+                # Procesamiento de imagen para Pygame
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 frame = cv2.resize(frame, (self.lado, self.lado))
                 frame = pygame.surfarray.make_surface(frame.swapaxes(0, 1))
 
-                # === BLIT CON DESFASE CONTROLADO ===
+                # Renderizado
                 self.screen.fill((0, 0, 0))
                 self.screen.blit(frame, (self.offset_x, self.offset_y))
 
-                # === CÍRCULO ROJO DE REFERENCIA ===
                 if self.modo_calibracion:
                     pygame.draw.circle(
                         self.screen,
@@ -70,3 +85,8 @@ class VideoPlayer:
                 self.clock.tick(fps_actual)
 
             cap.release()
+
+            # Avanza automáticamente al siguiente video en la lista de la carpeta media
+            indice_actual = (idx + 1) % len(self.archivos)
+            if hasattr(control, 'video_index'):
+                control.video_index = indice_actual
