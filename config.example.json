@@ -1,0 +1,6 @@
+{
+  "drive_folder_id": "ID_DE_LA_CARPETA_DE_DRIVE_DE_ESTE_VENTILADOR",
+  "credentials_path": "credentials/service_account.json",
+  "media_dir": "media",
+  "sync_interval_seconds": 600
+}

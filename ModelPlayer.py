@@ -11,7 +11,7 @@ class VideoPlayer:
         self.fps = fps
         
         # Cargar todos los archivos multimedia de la carpeta
-        self.archivos = sorted([f for f in os.listdir(carpeta) if f.endswith(('.mp4', '.avi', '.mkv'))])
+        self.archivos = self._cargar_archivos()
 
         if not self.archivos:
             raise FileNotFoundError(f"No hay videos en la carpeta: {carpeta}")
@@ -27,11 +27,22 @@ class VideoPlayer:
         self.screen = pygame.display.set_mode((self.lado, self.lado), pygame.NOFRAME)
         self.clock = pygame.time.Clock()
 
+    def _cargar_archivos(self):
+        return sorted([f for f in os.listdir(self.carpeta) if f.endswith(('.mp4', '.avi', '.mkv'))])
+
     def reproducir(self):
         # Índice interno para controlar el loop de la lista de archivos
         indice_actual = 0
 
         while True:
+            # Si drive_sync bajó/borró videos, recargamos la lista antes de elegir el siguiente
+            if getattr(control, 'recargar_lista', False):
+                control.recargar_lista = False
+                nuevos_archivos = self._cargar_archivos()
+                if nuevos_archivos:
+                    self.archivos = nuevos_archivos
+                    indice_actual = indice_actual % len(self.archivos)
+
             # Si 'control' fuerza un cambio de índice, lo usamos; si no, usamos el ciclo normal
             if hasattr(control, 'video_index'):
                 idx = control.video_index % len(self.archivos)
