@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask, redirect, url_for
 import control
 
@@ -105,4 +107,4 @@ def prev_video():
     return redirect(url_for("home"))
 
 def run_server():
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host=os.getenv("SERVER_HOST", "0.0.0.0"), port=int(os.getenv("SERVER_PORT", "5000")))

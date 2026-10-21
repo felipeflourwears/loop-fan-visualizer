@@ -1,5 +1,5 @@
 @echo off
-cd /d C:\Users\it\Desktop\ventilador\ventilador-3d-control
+cd /d "%~dp0"
 
 call venv\Scripts\activate
 
